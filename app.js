@@ -1,24 +1,23 @@
-// app/webapp/app.js
+// app.js
 
 const tg = window.Telegram.WebApp;
 tg.expand();
 
-// Получаем роль из URL (?role=sender / receiver)
 const params = new URLSearchParams(window.location.search);
-const role = params.get("role");
+let role = params.get("role");
 
+// ✅ Fallback: если role не пришёл — спросим пользователя
 if (!role) {
-  alert("Ошибка: не передана роль (sender / receiver)");
+  const choice = confirm("Вы выбираете ПВЗ отправителя?\nOK = отправитель, Cancel = получатель");
+  role = choice ? "sender" : "receiver";
 }
 
-// Инициализация карты
 const map = L.map("map").setView([55.751244, 37.618423], 11);
 
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   attribution: "© OpenStreetMap",
 }).addTo(map);
 
-// Загружаем ПВЗ
 fetch("pvz.json")
   .then((response) => response.json())
   .then((pvzList) => {
@@ -28,18 +27,12 @@ fetch("pvz.json")
 
       marker.on("click", () => {
         const payload = {
-          role: role, // ОБЯЗАТЕЛЬНО
-          platform_station_id: pvz.platform_station_id, // ОБЯЗАТЕЛЬНО
+          role: role,
+          platform_station_id: pvz.platform_station_id,
         };
 
-        console.log("SEND TO BOT:", payload);
-
-        // Отправляем данные в Telegram-бот
         tg.sendData(JSON.stringify(payload));
       });
     });
   })
-  .catch((err) => {
-    console.error("Ошибка загрузки pvz.json", err);
-    alert("Ошибка загрузки ПВЗ");
-  });
+  .catch(() => alert("Ошибка загрузки ПВЗ"));
